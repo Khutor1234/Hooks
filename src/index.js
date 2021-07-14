@@ -1,4 +1,4 @@
-import React, {useState, Component, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import ReactDOM from 'react-dom';
 
 const App = () => {
@@ -30,71 +30,38 @@ const App = () => {
     }
 }
 
-const PlanetInfo = ({id}) =>{
+const getPlanet = (id) => {
+    return fetch(`https://swapi.dev/api/planets/${id}`)
+    .then(res => res.json())
+    .then(data => data);
+}
 
-    const [name, setName] = useState(null)
+const useRequest = (request) => {
+    const [dataState, setDataState] = useState(null)
 
     useEffect(() =>{
         let cancelled = false;
-
-        fetch(`https://swapi.dev/api/planets/${id}`)
-        .then(res => res.json())
-        .then(data => !cancelled && setName(data.name));
-
+        request()
+            .then(data => !cancelled && setDataState(data))
         return () => cancelled = true;
-    }, [id])
+    }, [request]);
 
+    return dataState;
+}
+
+const usePlanetInfo = (id) => {
+    const request = useCallback(() => getPlanet(id), [id]);
+    return useRequest(request);
+}
+
+const PlanetInfo = ({id}) =>{
+    const data = usePlanetInfo(id);
+    
     return (
-        <div>{id} - {name}</div>
+        <div>{id} - {data && data.name}</div>
     )
 }
 
-const HookCounter = ({value}) => {
-
-    useEffect(() => {
-        console.log('mount');
-        return () => console.log('unmount')
-    }, [])
-
-    useEffect(() =>  console.log('update'))
-    return <p>{value}</p>
-}
-
-const Notification = () => {
-
-    const [visible, setVisible] = useState(true);
-
-    useEffect(() => {
-        const timeout = setTimeout(() => setVisible(false), 3500)
-        return () => clearTimeout(timeout)
-    }, [])
-
-
-    return (
-        <div>
-            {visible && <p>hello</p>}
-        </div>
-    )
-}
-
-class ClassCounter extends Component{
-
-    componentDidMount() {
-        console.log('class: mount')
-    }
-
-    componentDidUpdate(){
-        console.log('class: update')
-    }
-
-    componentWillUnmount(){
-        console.log('class: unmount')
-    }
-
-    render(){
-        return <p>{this.props.value}</p>
-    }
-}
 
 
 ReactDOM.render(<App/>, document.getElementById('root'));
